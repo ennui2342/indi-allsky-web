@@ -27,6 +27,26 @@ database migrations, keeping the migration state in `/var/lib/indi-allsky`,
 which must be persistent. It also runs `sudo chown` on `/etc/indi-allsky` and
 `/var/lib/indi-allsky`.
 
+## Local testing (Mac, arm64)
+
+```bash
+cp .env.example .env    # fill in; .env is gitignored
+./build-local.sh        # same two-step build as CI → indi-allsky-web:local
+docker compose up -d    # MariaDB + web at http://localhost:18000/indi-allsky/
+docker compose run --rm expire
+docker compose down -v
+```
+
+## Secrets
+
+- **Local:** `.env` (gitignored) is used only by the compose stack above.
+- **Cluster:** generated separately and kept in the k8s repo as a
+  SOPS-encrypted `*-secret.yaml`, like the rest of the cluster.
+  `INDIALLSKY_FLASK_PASSWORD_KEY` encrypts stored secrets in the database, so
+  it must never change once set.
+- **CI:** `DISCORD_WEBHOOK` is a GitHub Actions secret, as in the other
+  image repos. The notify step skips if it isn't set.
+
 ## Upgrading
 
 Keep this image on the same indi-allsky commit as the camera Pi

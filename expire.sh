@@ -17,6 +17,13 @@ set -o nounset
 ALLSKY_DIRECTORY="/home/allsky/indi-allsky"
 ALLSKY_ETC="/etc/indi-allsky"
 
+# The folder only appears with the first upload; until then there's nothing
+# to expire (and expire_images.py would crash on it).
+if [ ! -d "$INDIALLSKY_IMAGE_FOLDER" ]; then
+    echo "No image folder yet ($INDIALLSKY_IMAGE_FOLDER): nothing to expire"
+    exit 0
+fi
+
 if [ "${INDIALLSKY_MARIADB_SSL:-false}" == "true" ]; then
     SSL="ssl_ca=/etc/ssl/certs/ca-certificates.crt&ssl_verify_identity&"
 else

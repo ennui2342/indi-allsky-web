@@ -1,0 +1,49 @@
+# Local test stack on the Mac (arm64, same as the cluster). Build first with
+# ./build-local.sh, then:
+#
+#   docker compose up -d                 # http://localhost:18000/indi-allsky/
+#   docker compose run --rm expire       # one expiry run, as the CronJob does
+#   docker compose down -v               # remove everything, including data
+services:
+  db:
+    image: mariadb:11.4
+    environment:
+      MARIADB_RANDOM_ROOT_PASSWORD: "yes"
+      MARIADB_DATABASE: ${MARIADB_DATABASE:?copy .env.example to .env}
+      MARIADB_USER: ${MARIADB_USER:?copy .env.example to .env}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD:?set in .env}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  web:
+    image: indi-allsky-web:local
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "18000:8000"
+    volumes:
+      - images:/var/www/html/allsky
+      - migrations:/var/lib/indi-allsky
+
+  expire:
+    image: indi-allsky-web:local
+    entrypoint: ["/home/allsky/expire.sh"]
+    env_file: .env
+    depends_on:
+      - web
+    volumes:
+      - images:/var/www/html/allsky
+    profiles:
+      - expire
+
+volumes:
+  db-data:
+  images:
+  migrations:
